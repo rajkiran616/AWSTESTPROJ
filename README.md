@@ -2,4 +2,4 @@
 
 ## Talks
 
-- [Kubernetes: Service Discovery, Shared Storage & Secure Communication](talks/kubernetes-service-communication/) — HTML deck + speaker talking points for advocating Kubernetes onboarding, internal service proxying, Istio/service mesh security screening, and mTLS encryption between services.
+- [Kubernetes: Service Discovery, Shared Storage & Secure Communication](talks/kubernetes-service-communication/) — HTML deck, speaker talking points, and a LinkedIn discussion post inviting community perspectives on Kubernetes vs managed options like ECS/Fargate.
