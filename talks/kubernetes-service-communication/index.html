@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kubernetes: Service Discovery, Storage &amp; Secure Communication</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #0b1f2a;
+      --ink-soft: #1e3a4a;
+      --fog: #e8f0f4;
+      --mist: #c5d6df;
+      --teal: #0d7a6f;
+      --teal-bright: #14a896;
+      --amber: #c47a12;
+      --white: #f7fbfc;
+      --slide-pad: clamp(1.5rem, 5vw, 4rem);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--ink);
+      color: var(--white);
+      font-family: "IBM Plex Sans", sans-serif;
+      overflow: hidden;
+    }
+
+    .deck {
+      height: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      padding: var(--slide-pad);
+      background:
+        radial-gradient(ellipse 80% 60% at 100% 0%, rgba(20, 168, 150, 0.18), transparent 55%),
+        radial-gradient(ellipse 60% 50% at 0% 100%, rgba(196, 122, 18, 0.12), transparent 50%),
+        linear-gradient(160deg, #07151c 0%, #0b1f2a 45%, #123040 100%);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+      animation: rise 0.45s ease both;
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand {
+      font-family: "Syne", sans-serif;
+      font-weight: 800;
+      font-size: clamp(2.4rem, 7vw, 5.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.03em;
+      color: var(--white);
+      max-width: 14ch;
+    }
+
+    .brand span { color: var(--teal-bright); }
+
+    .eyebrow {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal-bright);
+      margin-bottom: 1.25rem;
+    }
+
+    h1 {
+      font-family: "Syne", sans-serif;
+      font-weight: 700;
+      font-size: clamp(2rem, 5.5vw, 3.75rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      max-width: 18ch;
+      margin-bottom: 1rem;
+    }
+
+    h2 {
+      font-family: "Syne", sans-serif;
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.75rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+      max-width: 22ch;
+    }
+
+    .lede {
+      font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+      line-height: 1.45;
+      color: var(--mist);
+      max-width: 42ch;
+    }
+
+    .points {
+      list-style: none;
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 0.5rem;
+      max-width: 52ch;
+    }
+
+    .points li {
+      position: relative;
+      padding-left: 1.35rem;
+      font-size: clamp(1rem, 2vw, 1.25rem);
+      line-height: 1.4;
+      color: var(--fog);
+    }
+
+    .points li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0.55em;
+      width: 0.55rem;
+      height: 0.55rem;
+      background: var(--teal-bright);
+      transform: rotate(45deg);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(1.5rem, 4vw, 3rem);
+      align-items: start;
+      margin-top: 1rem;
+      max-width: 1100px;
+    }
+
+    @media (max-width: 760px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      border-left: 3px solid var(--teal);
+      padding-left: 1.1rem;
+    }
+
+    .panel h3 {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 0.6rem;
+    }
+
+    .panel p {
+      font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+      line-height: 1.45;
+      color: var(--fog);
+    }
+
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.65rem;
+      margin-top: 1.5rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: clamp(0.8rem, 1.6vw, 1rem);
+    }
+
+    .flow .node {
+      background: rgba(20, 168, 150, 0.15);
+      border: 1px solid rgba(20, 168, 150, 0.45);
+      padding: 0.55rem 0.9rem;
+      color: var(--white);
+    }
+
+    .flow .arrow {
+      color: var(--amber);
+    }
+
+    .chrome {
+      position: fixed;
+      left: var(--slide-pad);
+      right: var(--slide-pad);
+      bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+      pointer-events: none;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.75rem;
+      color: var(--mist);
+      opacity: 0.85;
+    }
+
+    .chrome button {
+      pointer-events: auto;
+      background: transparent;
+      border: 1px solid rgba(197, 214, 223, 0.35);
+      color: var(--fog);
+      font-family: inherit;
+      font-size: 0.75rem;
+      padding: 0.4rem 0.75rem;
+      cursor: pointer;
+    }
+
+    .chrome button:hover {
+      border-color: var(--teal-bright);
+      color: var(--white);
+    }
+
+    .notes-toggle {
+      position: fixed;
+      top: 1rem;
+      right: var(--slide-pad);
+      z-index: 20;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(7, 21, 28, 0.75);
+      border: 1px solid rgba(197, 214, 223, 0.3);
+      color: var(--mist);
+      padding: 0.4rem 0.65rem;
+      cursor: pointer;
+    }
+
+    .speaker-notes {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 38vh;
+      overflow: auto;
+      background: rgba(7, 21, 28, 0.96);
+      border-top: 1px solid rgba(20, 168, 150, 0.35);
+      padding: 1rem var(--slide-pad) 3.5rem;
+      z-index: 15;
+      color: var(--mist);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    body.show-notes .speaker-notes { display: block; }
+    body.show-notes .slide { padding-bottom: 42vh; }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.75rem;
+    }
+
+    .cta {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      padding: 0.7rem 1.1rem;
+      border: 1px solid var(--teal-bright);
+      color: var(--white);
+      background: rgba(20, 168, 150, 0.2);
+      text-decoration: none;
+    }
+
+    .cta.ghost {
+      background: transparent;
+      border-color: rgba(197, 214, 223, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <button class="notes-toggle" type="button" id="notesBtn" aria-pressed="false">Speaker notes</button>
+
+  <div class="deck" id="deck" aria-live="polite">
+    <!-- 1 -->
+    <section class="slide active" data-notes="Open with why this matters for our teams: we are not adopting Kubernetes for fashion. We want faster onboarding, reliable internal communication, shared storage patterns, and stronger security between services without every app reinventing the wheel.">
+      <p class="eyebrow">Internal engineering talk</p>
+      <p class="brand">Kubernetes<span>.</span></p>
+      <p class="lede" style="margin-top:1.5rem">Service discovery, shared storage, and secure service-to-service communication — the case for onboarding applications the right way.</p>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-notes="Frame the advocacy: Kubernetes becomes the operating model for how apps join the platform — not just where containers run. Emphasize onboarding as a product experience for internal teams.">
+      <p class="eyebrow">01 · Why advocate Kubernetes</p>
+      <h1>Onboard apps once. Get platform capabilities for free.</h1>
+      <ul class="points">
+        <li>Standard deploy, scale, and health model across teams</li>
+        <li>Built-in naming and reachability for internal services</li>
+        <li>Consistent storage, secrets, and networking primitives</li>
+        <li>A place to attach company-wide security and traffic policy</li>
+      </ul>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-notes="Walk through DNS-based discovery: Service objects, ClusterIP, DNS like my-api.payments.svc.cluster.local. Contrast with hardcoded IPs and ad-hoc registries. Mention headless services and endpoints for stateful workloads if the audience is technical.">
+      <p class="eyebrow">02 · Service discovery</p>
+      <h2>Services find each other by name — not by fragile IPs.</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>Without the platform</h3>
+          <p>Hardcoded hosts, manual registries, environment-specific configs that break every time an instance moves.</p>
+        </div>
+        <div class="panel">
+          <h3>With Kubernetes</h3>
+          <p>Stable Service DNS, labels and selectors, and automatic endpoint updates as pods come and go.</p>
+        </div>
+      </div>
+      <div class="flow">
+        <span class="node">checkout</span>
+        <span class="arrow">→</span>
+        <span class="node">payments.svc</span>
+        <span class="arrow">→</span>
+        <span class="node">healthy pods</span>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-notes="Cover PVCs, StorageClasses, and shared volumes for workloads that need common data. Keep it practical: logs caches, model artifacts, team-shared assets — with the caveat that shared RWX storage is a deliberate choice, not the default for every microservice.">
+      <p class="eyebrow">03 · Shared storage</p>
+      <h2>Shared storage when apps must share state — without custom glue.</h2>
+      <ul class="points">
+        <li>PersistentVolumeClaims give apps durable disks across restarts</li>
+        <li>StorageClasses map teams to company-approved backends (EBS, EFS, etc.)</li>
+        <li>ReadWriteMany volumes support true shared filesystem use cases</li>
+        <li>Platform owns backups, encryption-at-rest, and capacity standards</li>
+      </ul>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-notes="Describe the internal company proxy pattern: east-west traffic stays inside the cluster/VPC; Ingress or API gateway for north-south. Kubernetes Services + NetworkPolicies form the first layer of the internal proxy story before you introduce a mesh.">
+      <p class="eyebrow">04 · Internal communication</p>
+      <h2>An internal company proxy between services — by design.</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>East–west</h3>
+          <p>Service-to-service calls stay on the cluster network. No public internet hop for internal APIs.</p>
+        </div>
+        <div class="panel">
+          <h3>North–south</h3>
+          <p>Ingress / gateway is the controlled front door. Everything behind it speaks through stable internal routes.</p>
+        </div>
+      </div>
+      <ul class="points" style="margin-top:1.5rem">
+        <li>One networking model for every onboarded application</li>
+        <li>NetworkPolicies to limit who can talk to whom</li>
+        <li>Fewer one-off VPNs, sidecars, and team-owned proxies</li>
+      </ul>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-notes="This is the Istio / service mesh slide. User referred to it conversationally as 'history' — clarify the name: Istio (or the mesh of choice). Focus on what business and security leaders care about: policy, identity, and encryption without rewriting apps.">
+      <p class="eyebrow">05 · Service mesh · Istio</p>
+      <h2>Istio adds the security and traffic control layer on top.</h2>
+      <ul class="points">
+        <li>Transparent sidecar (or ambient) proxy between every service call</li>
+        <li>Identity per workload — not just IP allowlists</li>
+        <li>Central traffic rules: retries, timeouts, canaries, circuit breaking</li>
+        <li>Security screening via AuthorizationPolicies and PeerAuthentication</li>
+      </ul>
+    </section>
+
+    <!-- 7 -->
+    <section class="slide" data-notes="Spend time here — encryption in transit between services. mTLS means every hop is authenticated and encrypted. Apps do not need to manage certs themselves; the mesh rotates them. Pair with zero-trust talking points.">
+      <p class="eyebrow">06 · Encryption in transit</p>
+      <h2>mTLS: encrypt and authenticate every service hop.</h2>
+      <div class="flow">
+        <span class="node">service A</span>
+        <span class="arrow">⇄ mTLS</span>
+        <span class="node">mesh proxy</span>
+        <span class="arrow">⇄ mTLS</span>
+        <span class="node">service B</span>
+      </div>
+      <ul class="points" style="margin-top:1.75rem">
+        <li>Automatic certificate issue and rotation</li>
+        <li>Stops plaintext lateral movement inside the cluster</li>
+        <li>Works across languages and frameworks without app rewrites</li>
+        <li>Audit-friendly: policy is declarative, not buried in code</li>
+      </ul>
+    </section>
+
+    <!-- 8 -->
+    <section class="slide" data-notes="Close the loop: onboarding an app to Kubernetes should mean it inherits discovery, storage options, internal routing, and mesh security. Ask for a pilot service and a security co-owner.">
+      <p class="eyebrow">07 · The pitch</p>
+      <h2>Onboard to Kubernetes. Inherit the platform.</h2>
+      <div class="grid-2">
+        <div class="panel">
+          <h3>What teams get</h3>
+          <p>Discovery, shared storage patterns, internal proxying, and encrypted service communication — without each squad building its own stack.</p>
+        </div>
+        <div class="panel">
+          <h3>What the company gets</h3>
+          <p>One place to enforce security screening, mTLS, and traffic policy as more applications land on the platform.</p>
+        </div>
+      </div>
+      <div class="cta-row">
+        <span class="cta">Next: pick a pilot service</span>
+        <span class="cta ghost">Pair platform + security</span>
+      </div>
+    </section>
+
+    <!-- 9 -->
+    <section class="slide" data-notes="Leave the slide up for Q&A. Offer the markdown outline in the repo as handout notes.">
+      <p class="eyebrow">Questions</p>
+      <p class="brand" style="max-width:20ch">Discovery.<br />Storage.<br /><span>Mesh security.</span></p>
+      <p class="lede" style="margin-top:1.5rem">Let’s talk about the first application we should onboard together.</p>
+    </section>
+  </div>
+
+  <aside class="speaker-notes" id="notes" aria-label="Speaker notes"></aside>
+
+  <div class="chrome">
+    <div>
+      <button type="button" id="prevBtn">← Prev</button>
+      <button type="button" id="nextBtn">Next →</button>
+    </div>
+    <div id="counter">1 / 9</div>
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const notesEl = document.getElementById("notes");
+    const counter = document.getElementById("counter");
+    let i = 0;
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle("active", idx === i));
+      notesEl.textContent = slides[i].dataset.notes || "";
+      counter.textContent = `${i + 1} / ${slides.length}`;
+    }
+
+    document.getElementById("prevBtn").addEventListener("click", () => show(i - 1));
+    document.getElementById("nextBtn").addEventListener("click", () => show(i + 1));
+    document.getElementById("notesBtn").addEventListener("click", (e) => {
+      const on = document.body.classList.toggle("show-notes");
+      e.currentTarget.setAttribute("aria-pressed", String(on));
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === " " || e.key === "PageDown") {
+        e.preventDefault();
+        show(i + 1);
+      } else if (e.key === "ArrowLeft" || e.key === "PageUp") {
+        e.preventDefault();
+        show(i - 1);
+      } else if (e.key === "n" || e.key === "N") {
+        document.body.classList.toggle("show-notes");
+      }
+    });
+
+    show(0);
+  </script>
+</body>
+</html>
