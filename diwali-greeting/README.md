@@ -1,9 +1,15 @@
-# Happy Diwali Greeting GIF
+# Happy Diwali Greeting
 
 Animated Diwali wishes for friends and family — an Indian family of three (parents and one daughter) celebrating with diyas, marigolds, and fireworks.
 
-## File
+## Share on WhatsApp Status & Instagram
 
-- [`happy-diwali-family.gif`](./happy-diwali-family.gif) — looping animated greeting (640×640)
+Use the ready-to-post files in [`social/`](./social/) — see [`social/HOW-TO-SHARE.md`](./social/HOW-TO-SHARE.md).
 
-Share it in chats, messages, or social posts. Happy Diwali!
+| File | Use on |
+|------|--------|
+| `social/diwali-status-stories.mp4` | WhatsApp Status + Instagram Stories (vertical) |
+| `social/diwali-instagram-feed-whatsapp.mp4` | Instagram feed / WhatsApp chat (square) |
+| `happy-diwali-family.gif` | GIF for chats / anywhere GIF works |
+
+Happy Diwali!
