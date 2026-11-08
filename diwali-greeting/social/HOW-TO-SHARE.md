@@ -1,6 +1,6 @@
 # Share on WhatsApp Status & Instagram
 
-Use the **MP4 videos** below — both apps handle video Status/Stories more reliably than GIFs.
+Fireworks Diwali greeting (no people). Use the **MP4 videos** below — both apps handle video Status/Stories more reliably than GIFs.
 
 ## Files
 
